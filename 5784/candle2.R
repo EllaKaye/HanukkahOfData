@@ -9,7 +9,7 @@ products <- read_csv(here::here("5784", "data", "noahs-products.csv"))
 # Find their contact details.
 
 # First, lets look for initials JP in customers
-JP_customers <-customers |> 
+JP_customers <- customers |> 
 #	select(name, phone, customerid) |> 
 	separate_wider_delim(name, delim = " ", 
 											 names = c("first", "last"), 
@@ -81,3 +81,27 @@ customers |>
 	filter(customerid == contractor) |> 
 	pull(phone)
 # This is it! 332-274-4185
+
+# Now improve:
+JP_customers <- customers |> 
+	separate_wider_delim(name, delim = " ", 
+											 names = c("first", "last"), 
+											 too_many = "merge") |> 
+	filter(str_detect(first, "^J")) |> 
+	filter(str_detect(last, "^P")) 
+
+order_desc <- orders |> 
+	filter(customerid %in% JP_customers$customerid) |> 
+	left_join(orders_items, by = "orderid") |> 
+	left_join(products, by = "sku") |> 
+	select(customerid, orderid, desc) 
+
+contractor <- order_desc |> 
+	group_by(customerid, orderid) |> 
+	filter(any(str_detect(desc, "Coffee")) & any(str_detect(desc, "Bagel"))) |> 
+	distinct(customerid) |> 
+	pull(customerid)	
+
+customers |> 
+	filter(customerid == contractor) |> 
+	pull(phone)
