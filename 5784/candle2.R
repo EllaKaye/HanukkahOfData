@@ -59,7 +59,7 @@ order_desc <- orders |>
 	filter(customerid %in% JP_customers$customerid) |> 
 	left_join(orders_items, by = "orderid") |> 
 	left_join(products, by = "sku") |> 
-	select(customerid, orderid, desc) |> 
+	#select(customerid, orderid, desc) |> 
 	#filter(str_detect(desc, "[Bb]agel")) |> 
 	#filter(str_detect(desc, "[Cc]offee")) |> 
 	I()
@@ -95,6 +95,8 @@ order_desc <- orders |>
 	left_join(orders_items, by = "orderid") |> 
 	left_join(products, by = "sku") |> 
 	select(customerid, orderid, desc) 
+# maybe should account for year in here too. 
+# We know it's 2017, so can use either `ordered` or `shipped` to get that
 
 contractor <- order_desc |> 
 	group_by(customerid, orderid) |> 
@@ -106,3 +108,38 @@ customers |>
 	filter(customerid == contractor) |> 
 	pull(phone)
 # This is it! 332-274-4185
+
+# Now improve again, in one pipe, with date:
+orders |> 
+	filter(str_detect(ordered, "2017")) |> 
+	left_join(orders_items, by = "orderid") |> 
+	left_join(products, by = "sku") |> 
+	select(customerid, orderid, desc) |> 
+	group_by(customerid, orderid) |> 
+	filter(any(str_detect(desc, "Coffee")) & any(str_detect(desc, "Bagel"))) |> 
+	distinct(customerid) |> 
+	left_join(customers, by = "customerid") |> 
+	separate_wider_delim(name, delim = " ", 
+											 names = c("first", "last"), 
+											 too_many = "merge") |> 
+	filter(str_detect(first, "^J")) |> 
+	filter(str_detect(last, "^P")) |> 
+	pull(phone)
+
+# Would maybe be faster filtering on JP initial first
+customers |> 
+	separate_wider_delim(name, delim = " ", 
+											 names = c("first", "last"), 
+											 too_many = "merge") |> 
+	filter(str_detect(first, "^J")) |> 
+	filter(str_detect(last, "^P")) |> 
+	left_join(orders, by = "customerid") |> 
+	filter(str_detect(ordered, "2017")) |> 
+	left_join(orders_items, by = "orderid") |> 
+	left_join(products, by = "sku") |> 
+	select(customerid, phone, orderid, desc) |> 
+	group_by(customerid, phone, orderid) |> 
+	filter(any(str_detect(desc, "Coffee")) & any(str_detect(desc, "Bagel"))) |> 
+	distinct(customerid) |> 
+	pull(phone)
+# Yes, that's faster
