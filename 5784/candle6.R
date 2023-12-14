@@ -30,12 +30,10 @@ products |>
 # both have 'sku' to join on.
 # What orders did Noah lose money on?
 wholesale_gt_shop <- left_join(orders_items, products, by = "sku") |> 
-	mutate(shop_price = qty * unit_price,
-				 wholesale_price = qty * wholesale_cost) |> 
+	mutate(shop_price = qty * unit_price) |> 
+	mutate(wholesale_price = qty * wholesale_cost) |> 
 	select(-sku, -unit_price, -desc, -wholesale_cost, -dims_cm) |> 
-	summarise(order_shop_price = sum(shop_price),
-						order_wholesale_price = sum(wholesale_price),
-						.by = orderid) |> 
+	summarise(order_shop_price = sum(shop_price), order_wholesale_price = sum(wholesale_price), .by = orderid) |> 
 	filter(order_wholesale_price > order_shop_price)
 
 # Join with customers. 
@@ -52,4 +50,23 @@ customers |>
 	filter(customerid == 4167) |> 
 	pull(phone)
 # let's try submitting that. Correct!
-# 585-838-9161
+# "585-838-9161"
+
+# final solution 
+candle6 <- function(customers, orders, orders_items, products) {
+	left_join(orders_items, products, by = "sku") |> 
+		mutate(shop_price = qty * unit_price) |> 
+		mutate(wholesale_price = qty * wholesale_cost) |> 
+		select(-sku, -unit_price, -desc, -wholesale_cost, -dims_cm) |> 
+		summarise(order_shop_price = sum(shop_price), order_wholesale_price = sum(wholesale_price), .by = orderid) |> 
+		filter(order_wholesale_price > order_shop_price) |> 
+		left_join(orders, by = "orderid") |> 
+		count(customerid) |> 
+		slice_max(n) |> 
+		left_join(customers) |> 
+		pull(phone)
+}
+bargain_hunter <- candle6(customers, orders, orders_items, products)
+bargain_hunter
+# "585-838-9161"
+## 585-838-9161

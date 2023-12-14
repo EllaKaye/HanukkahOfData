@@ -11,9 +11,7 @@ products <- read_csv(here::here("5784", "data", "noahs-products.csv"))
 # First, lets look for initials JP in customers
 JP_customers <- customers |> 
 #	select(name, phone, customerid) |> 
-	separate_wider_delim(name, delim = " ", 
-											 names = c("first", "last"), 
-											 too_many = "merge") |> 
+	separate_wider_delim(name, delim = " ", names = c("first", "last"), too_many = "merge") |> 
 	mutate(first_initial = str_extract(first, ".")) |> 
 	mutate(last_initial = str_extract(last, ".")) |> 
 	filter(first_initial == "J") |> 
@@ -84,9 +82,7 @@ customers |>
 
 # Now improve:
 JP_customers <- customers |> 
-	separate_wider_delim(name, delim = " ", 
-											 names = c("first", "last"), 
-											 too_many = "merge") |> 
+	separate_wider_delim(name, delim = " ", names = c("first", "last"), too_many = "merge") |> 
 	filter(str_detect(first, "^J")) |> 
 	filter(str_detect(last, "^P")) 
 
@@ -119,27 +115,29 @@ orders |>
 	filter(any(str_detect(desc, "Coffee")) & any(str_detect(desc, "Bagel"))) |> 
 	distinct(customerid) |> 
 	left_join(customers, by = "customerid") |> 
-	separate_wider_delim(name, delim = " ", 
-											 names = c("first", "last"), 
-											 too_many = "merge") |> 
+	separate_wider_delim(name, delim = " ", names = c("first", "last"), too_many = "merge") |> 
 	filter(str_detect(first, "^J")) |> 
 	filter(str_detect(last, "^P")) |> 
 	pull(phone)
 
 # Would maybe be faster filtering on JP initial first
-customers |> 
-	separate_wider_delim(name, delim = " ", 
-											 names = c("first", "last"), 
-											 too_many = "merge") |> 
-	filter(str_detect(first, "^J")) |> 
-	filter(str_detect(last, "^P")) |> 
-	left_join(orders, by = "customerid") |> 
-	filter(str_detect(ordered, "2017")) |> 
-	left_join(orders_items, by = "orderid") |> 
-	left_join(products, by = "sku") |> 
-	select(customerid, phone, orderid, desc) |> 
-	group_by(customerid, phone, orderid) |> 
-	filter(any(str_detect(desc, "Coffee")) & any(str_detect(desc, "Bagel"))) |> 
-	distinct(customerid) |> 
-	pull(phone)
-# Yes, that's faster
+# plus wrap as function for final speedrun
+candle2 <- function(customers, orders, orders_items, products) {
+	customers |> 
+		separate_wider_delim(name, delim = " ", names = c("first", "last"), too_many = "merge") |> 
+		filter(str_detect(first, "^J")) |> 
+		filter(str_detect(last, "^P")) |> 
+		left_join(orders, by = "customerid") |> 
+		filter(str_detect(ordered, "2017")) |> 
+		left_join(orders_items, by = "orderid") |> 
+		left_join(products, by = "sku") |> 
+		select(customerid, phone, orderid, desc) |> 
+		group_by(customerid, phone, orderid) |> 
+		filter(any(str_detect(desc, "Coffee")) & any(str_detect(desc, "Bagel"))) |> 
+		distinct(customerid) |> 
+		pull(phone)
+}
+
+contractor <- candle2(customers, orders, orders_items, products)
+contractor
+# "332-274-4185"

@@ -2,8 +2,7 @@ library(tidyverse)
 customers <- read_csv(here::here("5784", "data", "noahs-customers.csv"))
 
 customers |> 
-	summarise(min_year = min(birthdate),
-						max_year = max(birthdate))
+	summarise(min_year = min(birthdate), max_year = max(birthdate))
 
 # Years of the Rabbit
 browseURL("https://en.wikipedia.org/wiki/Rabbit_(zodiac)")
@@ -19,7 +18,7 @@ rc_customers <- customers |>
 				 birthdate >= ymd("2011-06-21") & birthdate <= ymd("2011-07-22") 
 	) 
 
-# We know that the guy we're looking for lives in the same meighbourhood as the contractor.
+# We know that the guy we're looking for lives in the same neighbourhood as the contractor.
 # So where does the contractor live?
 # From Day 2, contractor has ID 1475
 
@@ -31,3 +30,45 @@ rc_customers |>
 	filter(citystatezip == neighborhood) |> 
 	pull(phone)
 # correct: 917-288-9635
+
+years_of_rabbit <- c(1939, 1951, 1963, 1975, 1987, 1999, 2011)
+
+
+# refactor using lubridate functions 
+# (h/t to Chad Allison, https://github.com/chadallison/hanukkah_of_data_2023)
+candle3 <- function(customers, contractor) { 
+	
+	rabbit_cancer <- customers |> 
+		filter(year(birthdate) %in% c(1939, 1951, 1963, 1975, 1987, 1999, 2011)) |> 
+		filter(month(birthdate) == 6 & day(birthday) >= 21 | month(birthdate) == 7 & day(birthday) <= 22)
+	
+	neighborhood <- customers |> 
+		filter(phone == contractor) |> 
+		pull(citystatezip)
+	
+	rabbit_cancer |> 
+		filter(citystatezip == neighborhood) |> 
+		pull(phone)
+
+}
+
+# from Candle 2 (will need all days in same file for speedrun)
+contractor <- "332-274-4185" 
+
+candle3 <- function(customers, contractor) { 
+	
+	neighborhood <- customers |> 
+		filter(phone == contractor) |> 
+		pull(citystatezip)
+	
+	customers |> 
+		filter(year(birthdate) %in% c(1939, 1951, 1963, 1975, 1987, 1999, 2011)) |> 
+		filter(month(birthdate) == 6 & day(birthdate) >= 21 | month(birthdate) == 7 & day(birthdate) <= 22) |> 
+		filter(citystatezip == neighborhood) |> 
+		pull(phone)
+	
+}
+
+neighbor <- candle3(customers, contractor)
+neighbor
+# "917-288-9635"

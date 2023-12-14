@@ -18,7 +18,6 @@ products |>
 	View()
 # looks like we want strings containing "Noah's Jersey"
 
-
 products |> 
 	filter(str_detect(desc, "Cat"))
 
@@ -27,8 +26,7 @@ cat_jersey_ids <- SI_customers |>
 	left_join(orders, by = "customerid") |> 
 	left_join(orders_items, by = "orderid") |> 
 	left_join(products, by = "sku") |> 
-	filter(str_detect(desc, "Noah's Jersey") |
-				 	str_detect(desc, "Senior Cat")) |> 
+	filter(str_detect(desc, "Noah's Jersey") | str_detect(desc, "Senior Cat")) |> 
 	select(customerid, name, phone, desc) |> 
 	distinct() |> 
 	mutate(jersey = str_detect(desc, "Jersey")) |> 
@@ -75,7 +73,7 @@ SI_customers |>
 	filter(str_detect(desc, "Noah's Jersey")) #|> 
 	#filter(str_detect(name, "Eliz")) #|> 
 #	pull(phone)
-# manually tried Elizabeth Gray (the) only woman not found before, also not right.
+# manually tried Elizabeth Gray, (the only woman not found before), also not right.
 
 # Jersey not getting me anywhere. Let's focus on lots of cats.
 most_cat_food <- SI_customers |> 
@@ -109,3 +107,20 @@ orders |>
 	left_join(orders_items) |> 
 	left_join(products) |> View()
 # She has bought lots of Senior Cat Food, but no Jersey.
+
+# refactor final solution
+# someone from Staten Island who has bought lots of senior cat food 
+candle5 <- function(customers, orders, orders_items) {
+	customers |> 
+		filter(str_detect(citystatezip, "Staten")) |> 
+		left_join(orders, by = "customerid") |> 
+		left_join(orders_items, by = "orderid") |> 
+		left_join(products, by = "sku") |> 
+		filter(str_detect(desc, "Senior Cat")) |> 
+		summarise(qty_cat_food = sum(qty), .by = phone) |> 
+		slice_max(qty_cat_food) |> 
+		pull(phone)
+}
+cat_lady <- candle5(customers, orders, orders_items)
+cat_lady
+# "631-507-6048"

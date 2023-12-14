@@ -74,4 +74,42 @@ products |>
 products |> 
 	filter(str_detect(desc, "Bagel"))
 
+# earliest hour a pastry is shipped
+orders |> 
+#	filter(hour(shipped) %in% 3:4) |> 
+	left_join(orders_items, by = "orderid") |> 
+	filter(str_detect(sku, "BKY")) |> 
+	separate_wider_delim(shipped, " ", names = c("shipped_date", "shipped_time")) |> 
+	mutate(shipped_time = hms(shipped_time)) |> 
+	filter(shipped_time > 2) |> 
+	arrange(shipped_time) |> 
+	View()
+
+# final version, refactored to use `BKY` in sku
+# also using `hour()` is so much neater than above - h/t Chad Allison
+# https://github.com/chadallison/hanukkah_of_data_2023
+# note that this time we have more than one customer with more than one pastry
+# from hint "she liked to get up before dawn and claim the first pastries that came out of the oven"
+# suggests she does this often, so from them select customer with the most orders at this time
+# earliest sunrise in Manhattan is at 5:24am in mid-June.
+# Probably sometime after 4am reasonable from clue, but could extend to 3am
+candle4 <- function(customers, orders, orders_items) {
+	orders |> 
+		filter(hour(shipped) %in% 3:4) |> 
+		left_join(orders_items, by = "orderid") |> 
+		filter(str_detect(sku, "BKY")) |> 
+		summarise(n_pastries = sum(qty), .by = "orderid") |> 
+		filter(n_pastries > 1) |> 
+		left_join(orders, by = "orderid") |> 
+		count(customerid) |> 
+		slice_max(n) |> 
+		left_join(customers) |> 
+		pull(phone)	
+}
+
+early_bird <- candle4(customers, orders, orders_items)
+early_bird
+
+# "607-231-3605"
+
 

@@ -29,9 +29,7 @@ customers |>
 # use too_many = "merge", splits on first delim
 cs <- customers |> 
 	select(name, phone) |> 
-	separate_wider_delim(name, delim = " ", 
-											 names = c("first", "last"), 
-											 too_many = "merge")
+	separate_wider_delim(name, delim = " ", names = c("first", "last"), too_many = "merge")
 
 # now what's happened with last names? Still in two parts?
 cs |> 
@@ -40,23 +38,17 @@ cs |>
 
 # This works to split name into three cols
 cs |> 
-	separate_wider_delim(last, delim = " ", 
-											 names = c("last", "suffix"), 
-											 too_few = "align_start") |> 
+	separate_wider_delim(last, delim = " ", names = c("last", "suffix"), too_few = "align_start") |> 
 	summarise(sum(!is.na(suffix)))
 
 # customer split name
 csn <- cs |> 
-	separate_wider_delim(last, delim = " ", 
-											 names = c("last", "suffix"), 
-											 too_few = "align_start") 
+	separate_wider_delim(last, delim = " ", names = c("last", "suffix"), too_few = "align_start") 
 
 # can we split ll at once?
 csn <- customers |> 
 	select(name, phone) |> 
-	separate_wider_delim(name, delim = " ",
-											 names = c("first", "last", "suffix"),
-											 too_few = "align_start") |> 
+	separate_wider_delim(name, delim = " ", names = c("first", "last", "suffix"), too_few = "align_start") |> 
 	filter(!is.na(suffix))
 
 csn |> 
@@ -84,9 +76,7 @@ csn |>
 # maybe I also messed something up with `csn`, so start again with cusstomers
 customers |> 
 	select(name, phone) |> 
-	separate_wider_delim(name, delim = " ",
-											 names = c("first", "last"),
-											 too_many = "merge") |> 
+	separate_wider_delim(name, delim = " ", names = c("first", "last"), too_many = "merge") |> 
 #	mutate(last = str_remove_all(last, "\\s|\\.")) |> 
 #	mutate(last = str_remove_all(last, "\\.")) |>
 #	filter(str_detect(last, "Jr")) |>
@@ -104,4 +94,24 @@ customers |>
 # this is correct: 826-636-2286
 # didn't need to take suffixes into account
 
+# Final version, wrapped as function
+candle1 <- function(customers) {
+	customers |> 
+		select(name, phone) |> 
+		separate_wider_delim(name, delim = " ", names = c("first", "last"), too_many = "merge") |> 
+		mutate(phone_numbers = str_remove_all(phone, "-")) |> 
+		mutate(last_phone = str_replace_all(last, "[a-cA-C]", "2")) |> 
+		mutate(last_phone = str_replace_all(last_phone, "[d-fD-F]", "3")) |> 
+		mutate(last_phone = str_replace_all(last_phone, "[g-iG-I]", "4")) |> 	
+		mutate(last_phone = str_replace_all(last_phone, "[j-lJ-L]", "5")) |> 	
+		mutate(last_phone = str_replace_all(last_phone, "[m-oM-O]", "6")) |> 	
+		mutate(last_phone = str_replace_all(last_phone, "[p-sP-S]", "7")) |> 	
+		mutate(last_phone = str_replace_all(last_phone, "[t-vT-V]", "8")) |> 	
+		mutate(last_phone = str_replace_all(last_phone, "[w-zW-Z]", "9")) |> 
+		filter(phone_numbers == last_phone) |> 
+		pull(phone)
+}
 
+investigator <- candle1(customers)
+investigator
+# "826-636-2286"
