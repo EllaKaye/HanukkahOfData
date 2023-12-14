@@ -53,16 +53,17 @@ products |>
 	arrange(desc) |> 
 	View()
 # Actually 85 orders, # COL0041 is the addition.
+# But only 1 of these, so will filter out when comparing for different colour
 
 # Maybe safest to go by colour names
 # But would need to pull these from the products. 
-# Can I be sure that, e.g. Jersey will appear in the speed run set.
+# But can I be sure that, e.g. Jersey will appear in the speed run set?
 # Maybe come back to this
 
 # dates where two people ordered the same item, on a date when the bh shopped
 bh_ex_candidates <- matched_orders |> 
 	filter(str_detect(sku, "COL")) |> 
-	filter(sku != "COL0041") |> # doesn't make a difference here 
+	#filter(sku != "COL0041") |> # doesn't make a difference here 
 	mutate(desc = str_remove(desc, "Noah's ")) |> 
 	separate_wider_delim(desc, " ", names = c("item", "item_colour"), too_many = "merge") |> 
 	separate_wider_delim(item_colour, " ", names = c("item2", "colour"), too_few = "align_end") |> 
@@ -100,7 +101,16 @@ customers |>
 
 # note - if I keep `shipped` I can calculate the difference between those without needing the strptime conversion
 # then can use shipped_date for grouping by date and shipped for time differences.
+# e.g.
 orders |> 
 	head() |> 
-	mutate(shipped_date = str_extract(shipped, "\\d{4}-\\d{2}-\\d{2}"))
+	#mutate(shipped_date = str_extract(shipped, "\\d{4}-\\d{2}-\\d{2}"))
+	mutate(shipped_date = str_extract(shipped, "^.{10}"))
 
+# Better splitting of colours by regex
+# see ?separate_wider_regex for an example of splitting by last delimiter,
+# and why this regex works
+products |> 
+	filter(str_detect(sku, "COL")) |> 
+	select(desc) |> 
+	separate_wider_regex(desc, c(item = ".*", " ", colour = ".*"))
