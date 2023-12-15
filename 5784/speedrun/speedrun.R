@@ -213,10 +213,12 @@ meet_cute <- candle7(customers, orders, orders_items, products, bargain_hunter)
 meet_cute
 
 # There was a bug due to an assumption I'd made.
-# I used COL to filter for items with colours, but these are COLlector items (hinted at in puzzle 8), 
+# I originally used COL in 'sku' to filter for items with colours, 
+# but these are COLlector items (hinted at in puzzle 8), not COLour one
 # and I should have paid more attention to my own original working notes about this
 # and done what I'd originally said I'd come back to, getting colours from a product!
-# Had to add that to the function
+# Had to add that to the function 
+# (and will refactor my candle5 function accordingly when I write it up for the blog)
 
 # Candle 8 ----------------------------------------------------------------
 
