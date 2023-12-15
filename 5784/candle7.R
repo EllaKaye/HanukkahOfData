@@ -8,7 +8,6 @@ products <- read_csv(here::here("5784", "data", "noahs-products.csv"))
 # Find someone who bought the same item as the bargain hunter on the same day
 # but in a different colour
 
-
 bargain_hunter_phone <- "585-838-9161" # from yesterday
 bargain_hunter <- customers |> 
 	filter(phone == bargain_hunter_phone) 
@@ -114,3 +113,71 @@ products |>
 	filter(str_detect(sku, "COL")) |> 
 	select(desc) |> 
 	separate_wider_regex(desc, c(item = ".*", " ", colour = ".*"))
+
+
+
+# refactor 
+bargain_hunter <- "585-838-9161" # from yesterday
+candle7 <- function(customers, orders, orders_items, products, bargain_hunter) {
+
+	# get required info about the bargain hunter
+	bargain_hunter_id <- customers |> 
+		filter(phone == bargain_hunter) |> 
+		pull(customerid)
+	
+	bargain_hunter_orders <- customers |> 
+		filter(phone == bargain_hunter) |> 
+		left_join(orders, by = "customerid") |> 
+		select(-(customerid:long), -items, -total, -ordered) 
+	
+	bargain_hunter_orders_dates <- bargain_hunter_orders |> 
+		mutate(date = date(shipped)) |> 
+		distinct(date) |> 
+		pull(date)
+	
+	# All orders on the same date as the bargain hunter orders
+	# Keep track of which are the bargain hunter and which are potential ex
+	same_date_orders <- orders |> 
+		mutate(shipped_date = date(shipped)) |> 
+		filter(shipped_date %in% bargain_hunter_orders_dates) |> 
+		select(orderid, customerid, shipped, shipped_date) |> 
+		mutate(is_bargain_hunter = if_else(customerid == bargain_hunter_id, TRUE, FALSE)) |> 
+		left_join(orders_items, by = "orderid") |> 
+		left_join(products, by = "sku") |> 
+		select(-qty, -unit_price, -wholesale_cost, -dims_cm) 
+	
+	# Orders of items with a colour on the dates that the bargain hunter shopped
+	# Where two or more people bought the same item on that day
+	# And where one of the two was the bargain hunter
+	same_products <- same_date_orders |> 
+		filter(str_detect(sku, "COL")) |> 
+		separate_wider_regex(desc, c(item = ".*", " ", colour = ".*")) |> 
+		group_by(shipped_date) |> 
+		add_count(item) |> 
+		filter(n > 1) |> 
+		mutate(has_bargain_hunter = any(is_bargain_hunter)) |> 
+		filter(has_bargain_hunter) |> 
+		ungroup()
+	
+	# separate in bargain hunter and possible meet cute
+	bh <- same_products |> 
+		filter(is_bargain_hunter) |> 
+		select(customerid, shipped_date, shipped, item, colour)
+	
+	possible_meet_cute <- same_products |> 
+		filter(!is_bargain_hunter) |> 
+		select(customerid, shipped_date, shipped, item, colour)
+	
+	# Now join these together by item and date 
+	# .x is bargain hunter, .y is possible meet cute
+	# find for row where colour is different and time is closest
+	# that's the meet cute, so join with customers and pull phone
+	inner_join(bh, possible_meet_cute, by = c("shipped_date", "item")) |> 
+		filter(colour.x != colour.y) |> 
+		mutate(time_diff = abs(shipped.x - shipped.y)) |> 
+		slice_min(time_diff) |> 
+		left_join(customers, join_by(customerid.y == customerid)) |> 
+		pull(phone)
+}
+meet_cute <- candle7(customers, orders, orders_items, products, bargain_hunter) 
+meet_cute

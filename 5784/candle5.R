@@ -109,7 +109,7 @@ orders |>
 # She has bought lots of Senior Cat Food, but no Jersey.
 
 # refactor final solution
-# someone from Staten Island who has bought lots of senior cat food 
+# someone from Staten Island who buys lots of senior cat food at once
 candle5 <- function(customers, orders, orders_items) {
 	customers |> 
 		filter(str_detect(citystatezip, "Staten")) |> 
@@ -117,7 +117,9 @@ candle5 <- function(customers, orders, orders_items) {
 		left_join(orders_items, by = "orderid") |> 
 		left_join(products, by = "sku") |> 
 		filter(str_detect(desc, "Senior Cat")) |> 
-		summarise(qty_cat_food = sum(qty), .by = phone) |> 
+		summarise(qty_cat_food = sum(qty), .by = c(phone, orderid))|> 
+		select(-orderid) |> 
+		distinct() |> 
 		slice_max(qty_cat_food) |> 
 		pull(phone)
 }
