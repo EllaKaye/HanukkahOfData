@@ -72,3 +72,36 @@ candle3 <- function(customers, contractor) {
 neighbor <- candle3(customers, contractor)
 neighbor
 # "917-288-9635"
+
+# post speedrun refactor
+candle3 <- function(customers, contractor, years, first_month) { 
+	
+	neighborhood <- customers |> 
+		filter(phone == contractor) |> 
+		pull(citystatezip)
+	
+	customers |> 
+		filter(year(birthdate) %in% years) |> 
+		filter(month(birthdate) == first_month & day(birthdate) >= 21 | month(birthdate) == (first_month + 1) & day(birthdate) <= 22) |> 
+		filter(citystatezip == neighborhood) |> 
+		pull(phone)
+	
+}
+
+customers <- read_csv(here::here("5784", "data", "noahs-customers.csv"))
+years_rabbit <- c(1939, 1951, 1963, 1975, 1987, 1999, 2011)
+neighbor <- candle3(customers, contractor, years_rabbit, 6)
+neighbor
+# "917-288-9635"
+
+customers_speed <- read_csv(here::here("5784", "speedrun", "noahs-customers.csv"))
+years_goat <- c(1931, 1943, 1955, 1967, 1979, 1991, 2003, 2015)
+neighbor_speed <- candle3(customers_speed, contractor_speed, years_goat, 9)
+neighbor_speed
+# "914-594-5535"
+
+
+
+
+
+years <- c(1939, 1951, 1963, 1975, 1987, 1999, 2011)

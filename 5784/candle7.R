@@ -1,8 +1,8 @@
 library(tidyverse)
 
 customers <- read_csv(here::here("5784", "data", "noahs-customers.csv"))
-orders_items <- read_csv(here::here("5784", "data", "noahs-orders_items.csv"))
 orders <- read_csv(here::here("5784", "data", "noahs-orders.csv"))
+orders_items <- read_csv(here::here("5784", "data", "noahs-orders_items.csv"))
 products <- read_csv(here::here("5784", "data", "noahs-products.csv"))
 
 # Find someone who bought the same item as the bargain hunter on the same day
@@ -114,8 +114,6 @@ products |>
 	select(desc) |> 
 	separate_wider_regex(desc, c(item = ".*", " ", colour = ".*"))
 
-
-
 # refactor 
 bargain_hunter <- "585-838-9161" # from yesterday
 candle7 <- function(customers, orders, orders_items, products, bargain_hunter) {
@@ -181,3 +179,78 @@ candle7 <- function(customers, orders, orders_items, products, bargain_hunter) {
 }
 meet_cute <- candle7(customers, orders, orders_items, products, bargain_hunter) 
 meet_cute
+
+# post speedrun refactor
+# DO need to account for colours properly
+
+candle7 <- function(customers, orders, orders_items, products, bargain_hunter) {
+	
+	# get required info about the bargain hunter
+	bargain_hunter_id <- customers |> 
+		filter(phone == bargain_hunter) |> 
+		pull(customerid)
+	
+	bargain_hunter_orders <- customers |> 
+		filter(phone == bargain_hunter) |> 
+		inner_join(orders, by = "customerid") |> 
+		select(-(customerid:long), -items, -total, -ordered) 
+	
+	bargain_hunter_orders_dates <- bargain_hunter_orders |> 
+		mutate(date = date(shipped)) |> 
+		distinct(date) |> 
+		pull(date)
+	
+	# Make regex for colours
+	colours <- products |> 
+		filter(str_detect(desc, "Jersey")) |>  # 12 colours, all with COL in sku
+		arrange(desc) |> 
+		separate_wider_regex(desc, c(item = ".*", " ", colour = ".*")) |> 
+		pull(colour) |> 
+		paste(collapse = "|") |> 
+		str_remove_all("\\(|\\)") 
+	
+	# All orders with colours on the same date as the bargain hunter orders
+	# Keep track of which are the bargain hunter and which are potential ex
+	same_date_orders <- orders |> 
+		mutate(shipped_date = date(shipped)) |> 
+		filter(shipped_date %in% bargain_hunter_orders_dates) |> 
+		select(orderid, customerid, shipped, shipped_date) |> 
+		left_join(orders_items, by = "orderid") |> 
+		left_join(products, by = "sku") |> 
+		select(-qty, -unit_price, -wholesale_cost, -dims_cm) |> 
+		filter(str_detect(desc, colours)) |> 
+		separate_wider_regex(desc, c(item = ".*", " ", colour = ".*")) 
+	
+	# separate in bargain hunter and possible meet cute
+	bh <- same_date_orders |> 
+		filter(customerid == bargain_hunter_id) |> 
+		select(customerid, shipped_date, shipped, item, colour)
+	
+	possible_meet_cute <- same_date_orders |> 
+		filter(customerid != bargain_hunter_id) |> 
+		select(customerid, shipped_date, shipped, item, colour)
+	
+	# Now join these together by item and date 
+	# .x is bargain hunter, .y is possible meet cute
+	# find for row where colour is different and time is closest
+	# that's the meet cute, so join with customers and pull phone
+	inner_join(bh, possible_meet_cute, by = c("shipped_date", "item")) |> 
+		filter(colour.x != colour.y) |>
+		mutate(time_diff = abs(shipped.x - shipped.y)) |>
+		slice_min(time_diff) |>
+		left_join(customers, join_by(customerid.y == customerid)) |>
+		pull(phone)
+}
+meet_cute <- candle7(customers, orders, orders_items, products, bargain_hunter) 
+meet_cute
+# "838-335-7157"
+
+customers_speed <- read_csv(here::here("5784", "speedrun", "noahs-customers.csv"))
+orders_speed <- read_csv(here::here("5784", "speedrun", "noahs-orders.csv"))
+orders_items_speed <- read_csv(here::here("5784", "speedrun", "noahs-orders_items.csv"))
+products_speed <- read_csv(here::here("5784", "speedrun", "noahs-products.csv"))
+
+bargain_hunter_speed <- "838-295-7143" # from yesterday
+meet_cute_speed <- candle7(customers_speed, orders_speed, orders_items_speed, products_speed, bargain_hunter_speed) 
+meet_cute_speed
+# "516-544-4187"

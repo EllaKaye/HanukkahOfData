@@ -1,8 +1,8 @@
 library(tidyverse)
 
 customers <- read_csv(here::here("5784", "data", "noahs-customers.csv"))
-orders_items <- read_csv(here::here("5784", "data", "noahs-orders_items.csv"))
 orders <- read_csv(here::here("5784", "data", "noahs-orders.csv"))
+orders_items <- read_csv(here::here("5784", "data", "noahs-orders_items.csv"))
 products <- read_csv(here::here("5784", "data", "noahs-products.csv"))
 
 # Find an order of pastries that were ordered before 5am
@@ -112,4 +112,28 @@ early_bird
 
 # "607-231-3605"
 
+# Speedtun ran fine, but use inner join instead
+candle4 <- function(customers, orders, orders_items) {
+	orders |> 
+		filter(hour(shipped) %in% 3:4) |> 
+		inner_join(orders_items, by = "orderid") |> 
+		filter(str_detect(sku, "BKY")) |> 
+		summarise(n_pastries = sum(qty), .by = "orderid") |> 
+		filter(n_pastries > 1) |> 
+		inner_join(orders, by = "orderid") |> 
+		count(customerid) |> 
+		slice_max(n) |> 
+		inner_join(customers, by = "customerid") |> 
+		pull(phone)	
+}
 
+early_bird <- candle4(customers, orders, orders_items)
+early_bird
+# # "607-231-3605"
+
+customers_speed <- read_csv(here::here("5784", "speedrun", "noahs-customers.csv"))
+orders_speed <- read_csv(here::here("5784", "speedrun", "noahs-orders.csv"))
+orders_items_speed <- read_csv(here::here("5784", "speedrun", "noahs-orders_items.csv"))
+early_bird_speed <- candle4(customers_speed, orders_speed, orders_items_speed)
+early_bird_speed
+# "716-789-4433"

@@ -1,8 +1,8 @@
 library(tidyverse)
 
 customers <- read_csv(here::here("5784", "data", "noahs-customers.csv"))
-orders_items <- read_csv(here::here("5784", "data", "noahs-orders_items.csv"))
 orders <- read_csv(here::here("5784", "data", "noahs-orders.csv"))
+orders_items <- read_csv(here::here("5784", "data", "noahs-orders_items.csv"))
 products <- read_csv(here::here("5784", "data", "noahs-products.csv"))
 
 # woman who lives on Staten Island,
@@ -126,3 +126,29 @@ candle5 <- function(customers, orders, orders_items) {
 cat_lady <- candle5(customers, orders, orders_items)
 cat_lady
 # "631-507-6048"
+
+# post speed-run refactor
+# take out filter on Staten Island
+candle5 <- function(customers, orders, orders_items, products) {
+	customers |> 
+		inner_join(orders, by = "customerid") |> 
+		inner_join(orders_items, by = "orderid") |> 
+		inner_join(products, by = "sku") |> 
+		filter(str_detect(desc, "Senior Cat")) |> 
+		summarise(qty_cat_food = sum(qty), .by = c(phone, orderid))|> 
+		select(-orderid) |> 
+		distinct() |> 
+		slice_max(qty_cat_food) |> 
+		pull(phone) 
+}
+cat_lady <- candle5(customers, orders, orders_items, products)
+cat_lady
+# # "631-507-6048"
+
+customers_speed <- read_csv(here::here("5784", "speedrun", "noahs-customers.csv"))
+orders_speed <- read_csv(here::here("5784", "speedrun", "noahs-orders.csv"))
+orders_items_speed <- read_csv(here::here("5784", "speedrun", "noahs-orders_items.csv"))
+products_speed <- read_csv(here::here("5784", "speedrun", "noahs-products.csv"))
+cat_lady_speed <- candle5(customers_speed, orders_speed, orders_items_speed, products_speed)
+cat_lady_speed
+# "347-835-2358" 

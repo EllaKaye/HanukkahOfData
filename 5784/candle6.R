@@ -1,8 +1,8 @@
 library(tidyverse)
 
 customers <- read_csv(here::here("5784", "data", "noahs-customers.csv"))
-orders_items <- read_csv(here::here("5784", "data", "noahs-orders_items.csv"))
 orders <- read_csv(here::here("5784", "data", "noahs-orders.csv"))
+orders_items <- read_csv(here::here("5784", "data", "noahs-orders_items.csv"))
 products <- read_csv(here::here("5784", "data", "noahs-products.csv"))
 
 # Clues:
@@ -69,4 +69,30 @@ candle6 <- function(customers, orders, orders_items, products) {
 bargain_hunter <- candle6(customers, orders, orders_items, products)
 bargain_hunter
 # "585-838-9161"
-## 585-838-9161
+
+# post speed run refactor
+# ran fine, but use inner join
+candle6 <- function(customers, orders, orders_items, products) {
+	inner_join(orders_items, products, by = "sku") |> 
+		mutate(shop_price = qty * unit_price) |> 
+		mutate(wholesale_price = qty * wholesale_cost) |> 
+		select(-sku, -unit_price, -desc, -wholesale_cost, -dims_cm) |> 
+		summarise(order_shop_price = sum(shop_price), order_wholesale_price = sum(wholesale_price), .by = orderid) |> 
+		filter(order_wholesale_price > order_shop_price) |> 
+		inner_join(orders, by = "orderid") |> 
+		count(customerid) |> 
+		slice_max(n) |> 
+		inner_join(customers, by = "customerid") |> 
+		pull(phone)
+}
+bargain_hunter <- candle6(customers, orders, orders_items, products)
+bargain_hunter
+# "585-838-9161"
+
+customers_speed <- read_csv(here::here("5784", "speedrun", "noahs-customers.csv"))
+orders_speed <- read_csv(here::here("5784", "speedrun", "noahs-orders.csv"))
+orders_items_speed <- read_csv(here::here("5784", "speedrun", "noahs-orders_items.csv"))
+products_speed <- read_csv(here::here("5784", "speedrun", "noahs-products.csv"))
+bargain_hunter_speed <- candle6(customers_speed, orders_speed, orders_items_speed, products_speed)
+bargain_hunter_speed
+# "838-295-7143"

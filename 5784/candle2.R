@@ -1,6 +1,6 @@
 customers <- read_csv(here::here("5784", "data", "noahs-customers.csv"))
-orders_items <- read_csv(here::here("5784", "data", "noahs-orders_items.csv"))
 orders <- read_csv(here::here("5784", "data", "noahs-orders.csv"))
+orders_items <- read_csv(here::here("5784", "data", "noahs-orders_items.csv"))
 products <- read_csv(here::here("5784", "data", "noahs-products.csv"))
 
 # The claim ticket said ‘2017 JP’. 
@@ -141,3 +141,36 @@ candle2 <- function(customers, orders, orders_items, products) {
 contractor <- candle2(customers, orders, orders_items, products)
 contractor
 # "332-274-4185"
+
+# post speedrun refactor
+candle2 <- function(customers, orders, orders_items, products, first_initial_regex, second_initial_regex) {
+	customers |> 
+		separate_wider_delim(name, delim = " ", names = c("first", "last"), too_many = "merge") |> 
+		filter(str_detect(first, first_initial_regex)) |> 
+		filter(str_detect(last, second_initial_regex)) |> 
+		inner_join(orders, by = "customerid") |> 
+		filter(str_detect(ordered, "2017")) |> 
+		inner_join(orders_items, by = "orderid") |> 
+		inner_join(products, by = "sku") |> 
+		select(phone, orderid, desc) |> 
+		group_by(phone, orderid) |> 
+		filter(any(str_detect(desc, "Coffee")) & any(str_detect(desc, "Bagel"))) |> 
+		distinct(phone) |> 
+		pull(phone)
+}
+
+customers <- read_csv(here::here("5784", "data", "noahs-customers.csv"))
+orders_items <- read_csv(here::here("5784", "data", "noahs-orders_items.csv"))
+orders <- read_csv(here::here("5784", "data", "noahs-orders.csv"))
+products <- read_csv(here::here("5784", "data", "noahs-products.csv"))
+contractor <- candle2(customers, orders, orders_items, products, "^J", "^P")
+contractor
+# "332-274-4185"
+
+customers_speed <- read_csv(here::here("5784", "speedrun", "noahs-customers.csv"))
+orders_speed <- read_csv(here::here("5784", "speedrun", "noahs-orders.csv"))
+orders_items_speed <- read_csv(here::here("5784", "speedrun", "noahs-orders_items.csv"))
+products_speed <- read_csv(here::here("5784", "speedrun", "noahs-products.csv"))
+contractor_speed <- candle2(customers_speed, orders_speed, orders_items_speed, products_speed, "^D", "^S")
+contractor_speed
+# "838-351-0370"

@@ -98,7 +98,7 @@ early_bird
 
 # Candle 5 ----------------------------------------------------------------
 
-candle5 <- function(customers, orders, orders_items) {
+candle5 <- function(customers, orders, orders_items, products) {
 	customers |> 
 		#filter(str_detect(citystatezip, "Staten")) |> 
 		left_join(orders, by = "customerid") |> 
@@ -111,7 +111,7 @@ candle5 <- function(customers, orders, orders_items) {
 		slice_max(qty_cat_food) |> 
 		pull(phone)
 }
-cat_lady <- candle5(customers, orders, orders_items)
+cat_lady <- candle5(customers, orders, orders_items, products)
 cat_lady
 
 # No mention this time of Staten Island, 
@@ -248,3 +248,5 @@ cat("Cat Lady:", cat_lady) # 347-835-2358
 cat("Bargain Hunter:", bargain_hunter) # 838-295-7143
 cat("Meet Cute:", meet_cute) # 516-544-4187
 cat("Collector:", collector) # 516-638-9966
+
+# Full refactor of all functions at the end of each individual candle page

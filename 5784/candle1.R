@@ -112,6 +112,11 @@ candle1 <- function(customers) {
 		pull(phone)
 }
 
+customers <- read_csv(here::here("5784", "data", "noahs-customers.csv"))
 investigator <- candle1(customers)
 investigator
 # "826-636-2286"
+customers_speed <- read_csv(here::here("5784", "speedrun", "noahs-customers.csv"))
+investigator_speed <- candle1(customers_speed)
+investigator_speed
+# "767-365-7269"
