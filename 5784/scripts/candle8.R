@@ -68,3 +68,19 @@ products_speed <- read_csv(here::here("5784", "speedrun", "noahs-products.csv"))
 collector_speed <- candle8(customers_speed, orders_speed, orders_items_speed, products_speed) 
 collector_speed
 # "516-638-9966"
+
+# Candle 8 but filtering on "COL" in sku
+candle8 <- function(customers, orders, orders_items, products) {
+	customers |> 
+		inner_join(orders, by = "customerid") |> 
+		inner_join(orders_items, by = "orderid") |> 
+		filter(str_detect(sku, "COL")) |> 
+		count(phone, sort = TRUE) |> # unique phones, so equivalent to customer id
+		slice_max(n) |> 
+		pull(phone)
+}
+collector <- candle8(customers, orders, orders_items, products)
+collector	
+collector_speed <- candle8(customers_speed, orders_speed, orders_items_speed, products_speed) 
+collector_speed
+# "516-638-9966"
